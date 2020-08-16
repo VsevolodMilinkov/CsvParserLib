@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsvParserLib", "CsvParserLib\CsvParserLib.csproj", "{9B0E10DD-A6D1-4332-BC39-A14DF0506844}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CsvParserLib.Tests", "CsvParserLib.Tests\CsvParserLib.Tests.csproj", "{4633A373-5A1A-433B-8568-0FA8E3E0CA0D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{9B0E10DD-A6D1-4332-BC39-A14DF0506844}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9B0E10DD-A6D1-4332-BC39-A14DF0506844}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9B0E10DD-A6D1-4332-BC39-A14DF0506844}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9B0E10DD-A6D1-4332-BC39-A14DF0506844}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4633A373-5A1A-433B-8568-0FA8E3E0CA0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4633A373-5A1A-433B-8568-0FA8E3E0CA0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4633A373-5A1A-433B-8568-0FA8E3E0CA0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4633A373-5A1A-433B-8568-0FA8E3E0CA0D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
