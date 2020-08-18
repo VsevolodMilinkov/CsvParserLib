@@ -6,7 +6,7 @@ namespace CsvParserLib
 {
     public class Parser
     {
-        #region private fields
+        #region Private fields
 
         private string _inputPath;
         private string _outputPath;
@@ -15,15 +15,15 @@ namespace CsvParserLib
 
         #endregion
 
-        #region protected properties
+        #region Protected properties
 
-        protected internal string InputPath
+        internal string InputPath
         {
             get => _inputPath;
             set => _inputPath = File.Exists(value) ? value : throw new InputFileDoesntExistException();
         }
 
-        protected internal string OutputPath
+        internal string OutputPath
         {
             get => _outputPath;
             set => _outputPath = !(string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value))
@@ -31,9 +31,9 @@ namespace CsvParserLib
                 : throw new EmptyOutputFileNameException();
         }
 
-        protected internal Encoding Encoding { get; set; }
+        internal Encoding Encoding { get; set; }
 
-        protected internal string ColumnName
+        internal string ColumnName
         {
             get => _columnName;
             set => _columnName = !(string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value))
@@ -41,18 +41,17 @@ namespace CsvParserLib
                 : throw new EmptyColumnNameException();
         }
 
-        protected internal object Expression
+        internal object Expression
         {
             get => _expression;
             set => _expression = value;
         }
 
-        protected internal char ColSplitter { get; set; }
+        internal char ColSplitter { get; set; }
 
-        protected internal char HeaderSplitter { get; set; }
+        internal char HeaderSplitter { get; set; }
 
         #endregion
-
 
         public Parser(string inputPath, string outputPath, Encoding encoding, string columnName, object expression,
             char colSplitter = ';', char headerSplitter = ' ')
@@ -68,22 +67,53 @@ namespace CsvParserLib
 
         public bool Parse()
         {
-            throw new NotImplementedException();
+            try
+            {
+                using (var sr = new StreamReader(InputPath))
+                {
+                    //получаем заголовок 
+                    var firstLine = sr.ReadLine();
+                    if (string.IsNullOrEmpty(firstLine))
+                        throw new InputFileIsEmptyException(InputPath);
+                    //получаем инфу об указанном в columnName столбце
+                    CsvColumn csvColumn =
+                        new CsvColumn().ParseCsvHeader(firstLine, ColumnName, ColSplitter, HeaderSplitter);
+                    //проверяем, а соответствует ли значение для поиска из Expression типу данных из столбца в ColumnName
+                    
+                    if(!csvColumn.Type.TryParse(Expression))
+                        throw new IncorrectExpressionDataTypeException(ColumnName, Expression);
+                    //создаем исходящий csv-файл
+                    if (!File.Exists(OutputPath))
+                        File.Create(OutputPath).Close();
+                    try
+                    {
+                        string currentValue;
+                        string currentLine;
+                        using (var sw = new StreamWriter(OutputPath, true, Encoding))
+                        {
+                            //записываем в исходящий файл заголовок входящего файла
+                            sw.WriteLine(firstLine);
+                            //циклом по остальным строкам
+                            while (!sr.EndOfStream)
+                            {
+                                currentLine = sr.ReadLine();
+                                currentValue = currentLine.Split(ColSplitter)[csvColumn.Index];
+                                if (csvColumn.Type.TryParse(currentValue) && currentValue == Expression)
+                                    sw.WriteLine(currentLine);
+                            }
+                        }
+                    }
+                    catch (IOException)
+                    {
+                        throw new OutputFileIsBusyException(OutputPath);
+                    }
+                }
+                return true;
+            }
+            catch (IOException)
+            {
+                throw new InputFileIsBusyException(InputPath);
+            }
         }
-    }
-
-    public class EmptyColumnNameException : ArgumentException
-    {
-        public override string Message { get; } = "Получено пустое имя столбца для парсинга!";
-    }
-
-    public class EmptyOutputFileNameException : ArgumentException
-    {
-        public override string Message { get; } = "Введите имя исходящего файла!";
-    }
-
-    public class InputFileDoesntExistException : ArgumentException
-    {
-        public override string Message { get; } = "Введите имя входящего файла!";
     }
 }
