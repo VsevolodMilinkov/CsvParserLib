@@ -10,6 +10,11 @@ namespace CsvParserLib
         public override string Message { get; } = "Получено пустое имя столбца для парсинга!";
     }
 
+    public class EmptyExpressionException : Exception
+    {
+        public override string Message { get; } = "Получена пустая строка вместо выражения для поиска!";
+    }
+
     public class EmptyOutputFileNameException : ArgumentException
     {
         public override string Message { get; } = "Введите имя исходящего файла!";
@@ -50,19 +55,21 @@ namespace CsvParserLib
             Message = $"Исходящий файл \"{outputPath}\" занят другим процессом.";
         }
     }
-    
-    public class IncorrectExpressionDataTypeException : Exception
+
+    public class ExpressionTypeMismatchException : Exception
     {
         public override string Message { get; }
-        public IncorrectExpressionDataTypeException(string columnName, object expression)
+
+        public ExpressionTypeMismatchException(string columnName, object expression)
         {
-            Message = $"Указанное значение для парсинга (\"{expression}\") не соответстует типу данных в столбце \"{columnName}\"";
+            Message =
+                $"Указанное значение для парсинга (\"{expression}\") не соответстует типу данных в столбце \"{columnName}\"";
         }
     }
 
     #endregion
 
-    #region CsvColumn class exceptions
+    #region Column class exceptions
 
     internal class MissingColumnTypeException : Exception
     {
@@ -84,13 +91,13 @@ namespace CsvParserLib
         public override string Message { get; } = "Получена пустая строка вместо заголовка Csv файла!";
     }
 
-    public class IncorrectColumnTypeException : ArgumentException
+    public class UnsupportedColumnTypeException : Exception
     {
         public override string Message { get; }
 
-        public IncorrectColumnTypeException(string columnName, string typeInHeader)
+        public UnsupportedColumnTypeException(string columnTypeString)
         {
-            Message = $"Невозможно определить тип данных столбца \"{columnName}\"! (Указанный в файле тип - \"{typeInHeader}\")";
+            Message = $"В файле указан столбец неподдерживаемого типа \"{columnTypeString}\".";
         }
     }
 
@@ -98,6 +105,37 @@ namespace CsvParserLib
     {
         public override string Message { get; } =
             "Получена пустая строка вместо имени столбца для поиска - укажите имя столбца.";
+    }
+
+    public class ExcessInfoInColumnException : Exception
+    {
+        public override string Message { get; }
+
+        public ExcessInfoInColumnException(string csvHeader, char headerSplitter, string[] colArray)
+        {
+            Message = $"В заголовке \"{csvHeader}\" при разборе столбца получено более двух атрибутов " +
+                      $"(ожидается лишь имя и тип через знак \"{headerSplitter}\", массив - \"{string.Join(' ', colArray)}\")";
+        }
+    }
+
+    public class NoTypeInColumnException : Exception
+    {
+        public override string Message { get; }
+
+        public NoTypeInColumnException(string csvHeader, string columnName)
+        {
+            Message = $"В заголовке файла столбец \"{columnName}\" не имеет типа! (заголовок - \"{csvHeader}\")";
+        }
+    }
+
+    public class NoSuchColumnInCsvHeaderException : Exception
+    {
+        public override string Message { get; }
+
+        public NoSuchColumnInCsvHeaderException(string columnName, string csvHeader)
+        {
+            Message = $"Не удалось найти столбец \"{columnName}\" в заголовке csv файла (заголовок - \"{csvHeader}\").";
+        }
     }
 
     #endregion

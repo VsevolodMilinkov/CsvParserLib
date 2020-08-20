@@ -1,27 +1,11 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Text;
 using NUnit.Framework;
 
 namespace CsvParserLib.Tests
 {
-    class TestFile : IDisposable
-    {
-        public string name = "TestFile.PleaseDeleteMe";
-
-        public TestFile()
-        {
-            if (!File.Exists(name))
-                File.Create(name).Close();
-        }
-
-        public void Dispose()
-        {
-            if (File.Exists(name))
-                File.Delete(name);
-        }
-    }
-
     public class ParserTests
     {
         [SetUp]
@@ -33,262 +17,84 @@ namespace CsvParserLib.Tests
         #region Constructor Tests
 
         [Test]
-        public void Parser_InputPathFileDoExist_ExpectNoProblems()
+        public void Parser_InitiateObject_ExpectSuccess()
         {
-            using (var file = new TestFile())
-            {
-                try
-                {
-                    var parser = new Parser(file.name, "file2", Encoding.Default, "colName", "");
-                    Assert.True(parser != null, "Экземпляр парсера успешно инициализирован");
-                }
-                catch (Exception e)
-                {
-                    Assert.Fail(
-                        $"Неопределенное исключение при корректной (по идее) попытке инициализировать экземпляр парсера: {e.Message}, {e.StackTrace}");
-                }
-            }
+            using var file = new TestFile();
+            var parser = new Parser(file.name, "OutputFile", Encoding.Default, "colName", "testString1");
+            Assert.That(parser, Is.Not.Null, "Экземпляр парсера не удалось инициализировать");
         }
 
         [Test]
         public void Parser_InputFileDoesntExist_ExpectInputFileDoesntExistException()
         {
             string file = "TestFile.PleaseDeleteMe";
-            try
-            {
-                if (File.Exists(file))
-                    File.Delete(file);
-                var parser = new Parser(file, "", Encoding.Default, "", "");
-            }
-            catch (InputFileDoesntExistException)
-            {
-                Assert.Pass("Успешно выброшено исключение о том, что входящий файл не существует.");
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(
-                    $"При попытке инициализации экземпляра парсера с именем несуществующего входящего файла возникло некорректное исключение: {e.Message}, {e.StackTrace}");
-            }
+            if (File.Exists(file))
+                File.Delete(file);
+            Assert.Catch<InputFileDoesntExistException>(
+                () => new Parser(file, "", Encoding.Default, "", ""),
+                "При инициализации парсера с именем несуществующего входящего файла не возникло корректного исключения"
+            );
         }
 
-        [Test]
-        public void Parser_InputPathIsEmpty_ExpectInputFileDoesntExistException()
+        [TestCase("")]
+        [TestCase(" ")]
+        [TestCase(null)]
+        public void Parser_InputPathIsEmpty_ExpectInputFileDoesntExistException(string value)
         {
-            try
-            {
-                var parser = new Parser("", "", Encoding.Default, "", "");
-            }
-            catch (InputFileDoesntExistException)
-            {
-                Assert.Pass("Успешно выброшено исключение о пустом имени входящего файла.");
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(
-                    $"При попытке инициализации экземпляра парсера с пустым именем входящего файла возникло некорректное исключение: {e.Message}, {e.StackTrace}");
-            }
+            Assert.Catch<InputFileDoesntExistException>(
+                () => new Parser(value, "", Encoding.Default, "", ""),
+                "При инициализации парсера с пустой строкой вместо имени входящего файла не возникло корректного исключения"
+            );
         }
 
-        [Test]
-        public void Parser_InputPathIsSpace_ExpectException()
+        [TestCase("")]
+        [TestCase(" ")]
+        [TestCase(null)]
+        public void Parser_OutputPathIsEmpty_ExpectEmptyOutputFileNameException(string value)
         {
-            try
-            {
-                var parser = new Parser(" ", "", Encoding.Default, "colName", "");
-            }
-            catch (InputFileDoesntExistException)
-            {
-                Assert.Pass("Успешно выброшено исключение о пустом имени входящего файла.");
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(
-                    $"При попытке инициализации экземпляра парсера с пустым именем входящего файла возникло некорректное исключение: {e.Message}, {e.StackTrace}");
-            }
+            using var file = new TestFile();
+            Assert.Catch<EmptyOutputFileNameException>(
+                () => new Parser(file.name, value, Encoding.Default, "columnName", ""),
+                "При инициализации парсера с пустой строкой вместо имени исходящего файла не вышло корректного собщения об ошибке"
+            );
         }
 
-        [Test]
-        public void Parser_InputPathIsNull_ExpectInputFileDoesntExistException()
-        {
-            try
-            {
-                var parser = new Parser(null, "", Encoding.Default, "colName", "");
-            }
-            catch (InputFileDoesntExistException)
-            {
-                Assert.Pass("Успешно выброшено исключение о пустом имени входящего файла");
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(
-                    $"При попытке инициализации экземпляра парсера с пустым именем входящего файла возникло некорректное исключение: {e.Message}, {e.StackTrace}");
-            }
-        }
 
-        [Test]
-        public void Parser_OutputPathIsNull_ExpectEmptyOutputFileNameException()
+        [TestCase("")]
+        [TestCase(" ")]
+        [TestCase(null)]
+        public void Parser_ColumnNameIsEmpty_ExpectEmptyColumnNameException(string value)
         {
-            using (var file = new TestFile())
-            {
-                try
-                {
-                    var parser = new Parser(file.name, null, Encoding.Default, "columnName", "");
-                }
-                catch (EmptyOutputFileNameException)
-                {
-                    Assert.Pass("Успешно выброшено исключение о том, что получено пустое имя исходящего файла");
-                }
-                catch (Exception e)
-                {
-                    Assert.Fail(
-                        @$"Неопределённое исключение при попытке инициализации парсера с пустым именем исходящего файла: {e.Message}, {e.StackTrace}");
-                }
-            }
-        }
-
-        [Test]
-        public void Parser_OutputPathIsEmpty_ExpectEmptyOutputFileNameException()
-        {
-            using (var file = new TestFile())
-            {
-                try
-                {
-                    var parser = new Parser(file.name, "", Encoding.Default, "columnName", "");
-                }
-                catch (EmptyOutputFileNameException)
-                {
-                    Assert.Pass("Успешно выброшено исключение о том, что получено пустое имя исходящего файла");
-                }
-                catch (Exception e)
-                {
-                    Assert.Fail(
-                        @$"Неопределённое исключение при попытке инициализации парсера с пустым именем исходящего файла: {e.Message}, {e.StackTrace}");
-                }
-            }
-        }
-
-        [Test]
-        public void Parser_OutputPathIsSpace_ExpectEmptyOutputFileNameException()
-        {
-            using (var file = new TestFile())
-            {
-                try
-                {
-                    var parser = new Parser(file.name, " ", Encoding.Default, "columnName", "");
-                }
-                catch (EmptyOutputFileNameException)
-                {
-                    Assert.Pass("Успешно формируется исключение о пустом имени столбца для парсинга.");
-                }
-                catch (Exception e)
-                {
-                    Assert.Fail(
-                        @$"Неопределённое исключение при попытке инициализации парсера с пробелом вместо имени исходящего файла: {e.Message}, {e.StackTrace}");
-                }
-            }
-        }
-
-        [Test]
-        public void Parser_ColumnNameIsNull_ExpectEmptyColumnNameException()
-        {
-            using (var file = new TestFile())
-            {
-                try
-                {
-                    var parser = new Parser(file.name, "file2", Encoding.Default, null, "");
-                }
-                catch (EmptyColumnNameException)
-                {
-                    Assert.Pass("Успешно формируется исключение о пустом имени столбца для парсинга.");
-                }
-                catch (Exception e)
-                {
-                    Assert.Fail(
-                        @$"Неопределённое исключение при попытке инициализации парсера с null вместо имени столбца для парсинга: {e.Message}, {e.StackTrace}");
-                }
-            }
-        }
-
-        [Test]
-        public void Parser_ColumnNameIsEmpty_ExpectEmptyColumnNameException()
-        {
-            using (var file = new TestFile())
-            {
-                try
-                {
-                    var parser = new Parser(file.name, "file2", Encoding.Default, "", "");
-                }
-                catch (EmptyColumnNameException)
-                {
-                    Assert.Pass("Успешно формируется исключение о пустом имени столбца.");
-                }
-                catch (Exception e)
-                {
-                    Assert.Fail(
-                        $"Неопределённое исключение при попытке инициализации парсера с пустым именем столбца для парсинга: {e.Message}, {e.StackTrace}");
-                }
-            }
-        }
-
-        [Test]
-        public void Parser_ColumnNameIsSpace_ExpectEmptyColumnNameException()
-        {
-            using (var file = new TestFile())
-            {
-                try
-                {
-                    var parser = new Parser(file.name, "file2", Encoding.Default, " ", "");
-                }
-                catch (EmptyColumnNameException)
-                {
-                    Assert.Pass();
-                }
-                catch (Exception e)
-                {
-                    Assert.Fail(
-                        $"Неопределённое исключение при попытке инициализации парсера с пустым именем столбца для парсинга: {e.Message}, {e.StackTrace}");
-                }
-            }
+            using var file = new TestFile();
+            Assert.Catch<EmptyColumnNameException>(
+                () => new Parser(file.name, "file2", Encoding.Default, value, ""),
+                "Не удалось проверить вызов исключения EmptyColumnNameException при попытке инициализации парсера с пустым именем столбца для парсинга"
+            );
         }
 
         #endregion
 
         #region Parse method Tests
 
-        /*TODO:
-         Проверка того, что входящий файл не пустой;
-         Проверка того, что в файле первая строка корректно считывается и разделяется на n-ное кол-во столбцов;
-         Проверка того, что первая строка в файле имеет в столбце и название, и тип данных: если нет типа - ругаца;
-         Проверка того, что если в первой строке нет типа данных столбца - то ругаемся;
-         Проверка того, что указан неподдерживаемый тип данных столбца;
-         */
-        /* TODO:
-           а теперь серьезно:
-           хочу знать, что первая строка разбивается на столбцы;
-           хочу знать, что нет проблем с созданием нового файла;
-           потом хочу знать, что эти же столбцы нормально записываются в новый выходной файл;
-           
-           потом уже идет обработка и фильтрация строк             
-        */
         [Test]
         public void Parse_BusyInputFile_ExpectInputFileIsBusyException()
         {
             var name = "TestFile.PleaseDeleteMe";
-            if (File.Exists(name))
-                File.Delete(name);
-            File.Create(name); //создаем пустой файл, но не закрываем соединение через .Close()
+
             try
             {
-                var success = new Parser(name, "file2", Encoding.Default, "Column1", "").Parse();
-                Assert.Fail();
-            }
-            catch (InputFileIsBusyException)
-            {
-                Assert.Pass();
+                if (File.Exists(name))
+                    File.Delete(name);
+                File.Create(name); //создаем пустой файл, но не закрываем соединение через .Close()
+                Assert.Catch<InputFileIsBusyException>(() =>
+                        new Parser(name, "file2", Encoding.Default, "Column1", "1").Parse(),
+                    "Не удалось проверить вызов исключения InputFileIsBusyException при попытке парсинга входного файла, занятого другим процессом"
+                );
             }
             catch (Exception e)
             {
-                Assert.Fail($"Неопределенная ошибка при попытке парсинга входного файла, занятого другим процессом: {e.Message}: {e.StackTrace}");
+                Assert.Fail(
+                    $"Неопределенная ошибка при попытке парсинга входного файла, занятого другим процессом: {e.Message}: {e.StackTrace}");
             }
             finally
             {
@@ -300,46 +106,86 @@ namespace CsvParserLib.Tests
         [Test]
         public void Parse_EmptyInputFile_ExpectInputFileIsEmptyException()
         {
-            using (var file = new TestFile())
-            {
-                try
-                {
-                    var parser = new Parser(file.name, "file2", Encoding.Default, "Column1", "");
-                }
-                catch (InputFileIsEmptyException)
-                {
-                    Assert.Pass();
-                }
-                catch (Exception e)
-                {
-                    Assert.Fail(
-                        $"Неопределённое исключение при попытке парсинга пустого входного файла: {e.Message}, {e.StackTrace}");
-                }
-            }
+            using var file = new TestFile();
+            Assert.Catch<InputFileIsEmptyException>(() =>
+                    new Parser(file.name, "file2", Encoding.Default, "Column1", "1").Parse(),
+                "Неопределённое исключение при попытке парсинга пустого входного файла"
+            );
         }
 
         [Test]
         public void Parse_InputFileOnlyHeader_ExpectCorrectHeaderInOutputFile()
         {
-            using (var file = new TestFile())
-            {
-                var inputFileHeader = "Column1 string; Column2 string";
-                File.WriteAllText(file.name,inputFileHeader, Encoding.Default);
-                try
-                {
-                    string outputFileName = "OutputTestFile.PleaseDeleteMe";
-                    var success = new Parser(file.name, outputFileName, Encoding.Default, "Column1", "");
-                    var outputFileHeader = File.ReadAllText(file.name, Encoding.Default);
-                    Assert.True(inputFileHeader == outputFileHeader);
-                }
-                catch (Exception e)
-                {
-                    Assert.Fail(
-                        $"Неопределённое исключение при попытке парсинга пустого входного файла: {e.Message}, {e.StackTrace}");
-                }
-            }
+            using var file = new TestFile();
+            using var outputFile = new TestFile("OutputTestFile.PleaseDeleteMe");
+
+            var inputFileHeader = "Column1 string; Column2 string";
+            string inputFileText = new StringBuilder()
+                .AppendLine(inputFileHeader)
+                .ToString();
+            File.WriteAllText(file.name, inputFileText, Encoding.Default);
+            bool success = new Parser(file.name, outputFile.name, Encoding.Default, "Column1", "1").Parse();
+            string outputFileHeader = File.ReadAllText(outputFile.name, Encoding.Default);
+
+            Assert.True(success);
+            Assert.True(File.Exists(outputFile.name));
+            Assert.AreEqual(inputFileHeader, outputFileHeader);
         }
-        
+
+        [TestCase("")]
+        [TestCase(" ")]
+        [TestCase(null)]
+        public void Parse_EmptyExpression_ExpectEmptyExpressionException(string value)
+        {
+            using var file = new TestFile();
+            Assert.Catch<EmptyExpressionException>(
+                () => new Parser(file.name, "file2", Encoding.Default, "Column1", value).Parse(),
+                "Неопределённое исключение при попытке парсинга без указанного значения для поиска"
+            );
+        }
+
+        [TestCase(//в столбце есть значение - вернется 2 строки вместе с заголовком
+            new[] {"Column1 string; Column2 string", "testString1; testString2"},
+            "Column1",
+            "testString1",
+            2
+        )]
+        [TestCase(//тоже самое, но ищется строка с пробелом - должно вернуться 2 строки вместе с заголовком
+            new[] {"Column1 string; Column2 string", "testString 1; testString2"},
+            "Column1",
+            "testString 1",
+            2
+        )]
+        [TestCase( //в столбце Column1 нет строк со значением "testString2" - в файле будет 1 строка заголовка 
+            new[] {"Column1 string; Column2 string", "testString1; testString2"},
+            "Column1",
+            "testString2",
+            1
+        )]
+        //todo: проверить, что корректно обрабатываются сложные экранироанные строки вида (Иванов Иван Иванович; 18.06.1983; 34; 6,45; "Работал над проектами: ""АБС"";""КВД""")
+        public void Parse_InputFileDoExist_ExpectOutputFileWithCorrectRowCount
+        (
+            string[] inputLines,
+            string columnName,
+            string expression,
+            int expectedRowCount
+        )
+        {
+            using var inputFile = new TestFile();
+            StringBuilder sb = new StringBuilder();
+            foreach (var line in inputLines)
+                sb.AppendLine(line);
+            string inputFileText = sb.ToString();
+            File.WriteAllText(inputFile.name, inputFileText, Encoding.Default);
+            using var outputFile = new TestFile("OutputTestFile.PleaseDeleteMe");
+            //пропарсилось
+            Assert.True(new Parser(inputFile.name, outputFile.name, Encoding.Default, columnName, expression).Parse());
+            //исходящий файл есть
+            Assert.True(File.Exists(outputFile.name));
+            //кол-во строк в нем соответствует ожиданиям
+            Assert.AreEqual(expectedRowCount, File.ReadLines(outputFile.name).Count());
+        }
+
         #endregion
     }
 }
