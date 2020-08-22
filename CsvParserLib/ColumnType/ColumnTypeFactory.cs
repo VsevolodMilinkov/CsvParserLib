@@ -13,11 +13,11 @@ namespace CsvParserLib
                 case "integer": 
                     return new ColumnTypeInt();
                 case "date": 
-                    return new ColumnTypeDateTime();
+                    return new ColumnTypeDate();
                 case "float": 
                     return new ColumnTypeFloat();
                 default: 
-                    throw new UnsupportedColumnTypeException(columnTypeString.Trim().ToLower());
+                    throw new UnsupportedColumnTypeException(columnTypeString.Trim());
             }
         }
     }

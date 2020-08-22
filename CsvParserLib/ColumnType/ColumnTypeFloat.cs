@@ -1,3 +1,5 @@
+using System;
+
 namespace CsvParserLib
 {
     public class ColumnTypeFloat : IColumnType
@@ -9,7 +11,7 @@ namespace CsvParserLib
 
         public bool IsEqual(string first, string second)
         {
-            return CanBeParsed(first) && CanBeParsed(second) && float.Parse(first) == float.Parse(second);
+            return CanBeParsed(first) && CanBeParsed(second) && Convert.ToSingle(first) == Convert.ToSingle(second);
         }
     }
 }

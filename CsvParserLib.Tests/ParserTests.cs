@@ -8,12 +8,6 @@ namespace CsvParserLib.Tests
 {
     public class ParserTests
     {
-        [SetUp]
-        public void Setup()
-        {
-        }
-
-
         #region Constructor Tests
 
         [Test]
@@ -144,13 +138,13 @@ namespace CsvParserLib.Tests
             );
         }
 
-        [TestCase(//в столбце есть значение - вернется 2 строки вместе с заголовком
+        [TestCase( //в столбце есть значение - вернется 2 строки вместе с заголовком
             new[] {"Column1 string; Column2 string", "testString1; testString2"},
             "Column1",
             "testString1",
             2
         )]
-        [TestCase(//тоже самое, но ищется строка с пробелом - должно вернуться 2 строки вместе с заголовком
+        [TestCase( //тоже самое, но ищется строка с пробелом - должно вернуться 2 строки вместе с заголовком
             new[] {"Column1 string; Column2 string", "testString 1; testString2"},
             "Column1",
             "testString 1",
@@ -162,7 +156,31 @@ namespace CsvParserLib.Tests
             "testString2",
             1
         )]
-        //todo: проверить, что корректно обрабатываются сложные экранироанные строки вида (Иванов Иван Иванович; 18.06.1983; 34; 6,45; "Работал над проектами: ""АБС"";""КВД""")
+        [TestCase( //в столбце Column1 искомая дата - в файле будет 3 записи
+            new[]
+            {
+                "Column1 Date; Column2 string", 
+                "12.03.2020; testString1", 
+                "10.05.2020; testString2",
+                "12.03.2020; testString3"
+            },
+            "Column1",
+            "12.03.2020",
+            3
+        )]
+        [TestCase( //в столбце Projects искомая строка с экранированием - в файле будет 4 записи
+            new[]
+            {
+                "Name String; Birthdate Date; Somenumber Integer; Somenumber2 Float; Projects String",
+                "Иванов Иван Иванович; 18.06.1983; 31; 6,45; \"Работал над проектами: \"\"АБС\"\";\"\"КВД\"\"\"",
+                "Петров Петр Иванович; 18.01.1973; 33; 6,05; \"Работал над проектами: \"\"АБС\"\";\"\"КВД\"\"\"",
+                "Пупкин Василий Карпович; 15.06.1985; 14; 5,45; \"Работал над проектами: \"\"АБС\"\";\"\"КВД\"\"\"",
+                "Пельмень Кондратий Пэтрович; 10.01.1985; 14; 5,50; \"Работал над проектами: \"\"АБС\"\""
+            },
+            "Projects",
+            "\"Работал над проектами: \"\"АБС\"\";\"\"КВД\"\"\"",
+            4
+        )]
         public void Parse_InputFileDoExist_ExpectOutputFileWithCorrectRowCount
         (
             string[] inputLines,
@@ -187,5 +205,16 @@ namespace CsvParserLib.Tests
         }
 
         #endregion
+
+        [TestCase("testString1; testString2", 0, "testString1")]
+        [TestCase(
+            "Иванов Иван Иванович; 18.06.1983; 31; 6,45; \"Работал над проектами: \"\"АБС\"\";\"\"КВД\"\"\"",
+            4,
+            "\"Работал над проектами: \"\"АБС\"\";\"\"КВД\"\"\""
+        )]
+        public void ParseLine_TryCorrectString_ExpectSuccess(string line, int index, string expectedResult)
+        {
+            Assert.AreEqual(expectedResult, Parser.ParseLine(line, ';', index));
+        }
     }
 }

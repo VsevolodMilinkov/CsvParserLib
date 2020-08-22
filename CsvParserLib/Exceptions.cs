@@ -4,66 +4,62 @@ namespace CsvParserLib
 {
     #region Parser Class exceptions
 
-    // Todo: а исключения здесь наследуются от верных классов?
     public class EmptyColumnNameException : ArgumentException
     {
-        public override string Message { get; } = "Получено пустое имя столбца для парсинга!";
+        public EmptyColumnNameException() : base("Получено пустое имя столбца для парсинга!")
+        {
+        }
     }
 
-    public class EmptyExpressionException : Exception
+    public class EmptyExpressionException : ArgumentException
     {
-        public override string Message { get; } = "Получена пустая строка вместо выражения для поиска!";
+        public EmptyExpressionException() : base("Получена пустая строка вместо выражения для поиска!")
+        {
+        }
     }
 
     public class EmptyOutputFileNameException : ArgumentException
     {
-        public override string Message { get; } = "Введите имя исходящего файла!";
+        public EmptyOutputFileNameException() : base("Введите имя исходящего файла!")
+        {
+        }
     }
 
     public class InputFileDoesntExistException : ArgumentException
     {
-        public override string Message { get; } = "Введите имя входящего файла!";
+        public InputFileDoesntExistException() : base("Введите имя входящего файла!")
+        {
+        }
     }
 
     public class InputFileIsEmptyException : ArgumentException
     {
-        public override string Message { get; }
-
-        public InputFileIsEmptyException(string inputPath)
+        public InputFileIsEmptyException(string inputPath) : base($"Входящий файл \"{inputPath}\" пуст!")
         {
-            Message = $"Входящий файл \"{inputPath}\" пуст!";
         }
     }
 
     public class InputFileIsBusyException : ArgumentException
     {
-        public override string Message { get; }
-
-        public InputFileIsBusyException(string inputPath)
+        public InputFileIsBusyException(string inputPath) : base(
+            $"Входящий файл \"{inputPath}\" занят другим процессом!")
         {
-            Message = $"Входящий файл \"{inputPath}\" занят другим процессом!";
         }
     }
 
-    // todo: затестить и понять - надо ли вообще? это же исходящий файл, его либо не должно быть, либо ругаться, что такой файл уже есть, не?
-    public class OutputFileIsBusyException : Exception
+    public class OutputFileIsBusyException : ArgumentException
     {
-        public override string Message { get; }
-
-        public OutputFileIsBusyException(string outputPath)
+        public OutputFileIsBusyException(string outputPath) : base(
+            $"Исходящий файл \"{outputPath}\" занят другим процессом.")
         {
-            Message = $"Исходящий файл \"{outputPath}\" занят другим процессом.";
         }
     }
 
-    public class ExpressionTypeMismatchException : Exception
+    public class ExpressionTypeMismatchException : ArgumentException
     {
-        public override string Message { get; }
-
-        public ExpressionTypeMismatchException(string columnName, object expression)
+        public ExpressionTypeMismatchException(string columnName, object expression) : base(
+            $"Указанное значение для парсинга (\"{expression}\") не соответстует типу данных в столбце \"{columnName}\"")
         {
-            Message =
-                $"Указанное значение для парсинга (\"{expression}\") не соответстует типу данных в столбце \"{columnName}\"";
         }
     }
 
@@ -71,70 +67,72 @@ namespace CsvParserLib
 
     #region Column class exceptions
 
-    internal class MissingColumnTypeException : Exception
+    public class MissingColumnTypeException : ArgumentException
     {
-        public override string Message { get; }
-
-        public MissingColumnTypeException(string s)
+        public MissingColumnTypeException(string s) : base($"У столбца \"{s}\" не указан тип данных!")
         {
-            Message = $"У столбца \"{s}\" не указан тип данных!";
         }
     }
 
-    internal class MisingColumnNameException : ArgumentException
+    public class MissingColumnNameException : ArgumentException
     {
-        public override string Message { get; } = "Указано пустое имя столбца!";
+        public MissingColumnNameException() : base("Указано пустое имя столбца!")
+        {
+        }
     }
 
     public class CsvHeaderIsEmptyException : ArgumentException
     {
-        public override string Message { get; } = "Получена пустая строка вместо заголовка Csv файла!";
+        public CsvHeaderIsEmptyException() : base("Получена пустая строка вместо заголовка Csv файла!")
+        {
+        }
     }
 
-    public class UnsupportedColumnTypeException : Exception
+    public class UnsupportedColumnTypeException : ArgumentException
     {
-        public override string Message { get; }
-
-        public UnsupportedColumnTypeException(string columnTypeString)
+        public UnsupportedColumnTypeException(string columnTypeString) : base(
+            $"Неподдерживаемый тип искомого столбца - \"{columnTypeString}\".")
         {
-            Message = $"В файле указан столбец неподдерживаемого типа \"{columnTypeString}\".";
         }
     }
 
     public class CsvHeaderNoColumnNameException : ArgumentNullException
     {
-        public override string Message { get; } =
-            "Получена пустая строка вместо имени столбца для поиска - укажите имя столбца.";
-    }
-
-    public class ExcessInfoInColumnException : Exception
-    {
-        public override string Message { get; }
-
-        public ExcessInfoInColumnException(string csvHeader, char headerSplitter, string[] colArray)
+        public CsvHeaderNoColumnNameException() : base(
+            "Получена пустая строка вместо имени искомого столбца - укажите имя столбца.")
         {
-            Message = $"В заголовке \"{csvHeader}\" при разборе столбца получено более двух атрибутов " +
-                      $"(ожидается лишь имя и тип через знак \"{headerSplitter}\", массив - \"{string.Join(' ', colArray)}\")";
         }
     }
 
-    public class NoTypeInColumnException : Exception
+    public class ExcessInfoInColumnException : ArgumentException
     {
-        public override string Message { get; }
-
-        public NoTypeInColumnException(string csvHeader, string columnName)
+        public ExcessInfoInColumnException(string csvHeader, char headerSplitter, string[] colArray) : base(
+            $"В заголовке \"{csvHeader}\" при разборе искомого столбца получено более двух атрибутов " +
+            $"(ожидается лишь имя без пробелов и тип через знак \"{headerSplitter}\", массив - \"{string.Join(' ', colArray)}\")")
         {
-            Message = $"В заголовке файла столбец \"{columnName}\" не имеет типа! (заголовок - \"{csvHeader}\")";
         }
     }
 
-    public class NoSuchColumnInCsvHeaderException : Exception
+    public class NoTypeInColumnException : ArgumentException
     {
-        public override string Message { get; }
-
-        public NoSuchColumnInCsvHeaderException(string columnName, string csvHeader)
+        public NoTypeInColumnException(string csvHeader, string columnName) : base(
+            $"В заголовке файла искомый столбец \"{columnName}\" не имеет типа! (заголовок - \"{csvHeader}\")")
         {
-            Message = $"Не удалось найти столбец \"{columnName}\" в заголовке csv файла (заголовок - \"{csvHeader}\").";
+        }
+    }
+
+    public class EmptyColumnException : Exception
+    {
+        public EmptyColumnException(int index) : base($"Пустой столбец с индексом {index} в заголовке csv файла!")
+        {
+        }
+    }
+
+    public class NoSuchColumnInCsvHeaderException : ArgumentException
+    {
+        public NoSuchColumnInCsvHeaderException(string columnName, string csvHeader) : base(
+            $"Не удалось найти столбец \"{columnName}\" в заголовке csv файла (заголовок - \"{csvHeader}\").")
+        {
         }
     }
 

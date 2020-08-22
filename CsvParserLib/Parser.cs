@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CsvParserLib
 {
@@ -71,37 +72,34 @@ namespace CsvParserLib
         {
             try
             {
-                
                 using (var sr = new StreamReader(InputPath))
                 {
-                    //получаем заголовок 
+                    // получаем заголовок 
                     string firstLine = sr.ReadLine();
                     if (firstLine == null || string.IsNullOrEmpty(firstLine.Trim()))
                         throw new InputFileIsEmptyException(InputPath);
-                    //получаем инфу об указанном в columnName столбце
+                    // получаем инфу об искомом столбце columnName
                     Column column = Column.ParseCsvHeader(firstLine, ColumnName, ColSplitter, HeaderSplitter);
-                    //проверяем, а соответствует ли значение для поиска из Expression типу данных из столбца в ColumnName
+                    // проверяем, а соответствует ли значение для поиска из Expression типу данных из столбца в ColumnName
                     if (!column.Type.CanBeParsed(Expression))
                         throw new ExpressionTypeMismatchException(ColumnName, Expression);
-                    //создаем исходящий csv-файл
+                    // создаем/перезаписываем исходящий csv-файл
                     try
                     {
-                        if (!File.Exists(OutputPath))
-                            File.Create(OutputPath).Close();
                         string currentValue;
                         string currentLine;
-                        using (var sw = new StreamWriter(OutputPath, true, Encoding))
+                        using (var sw = new StreamWriter(OutputPath, false, Encoding))
                         {
-                            //записываем в исходящий файл заголовок входящего файла
+                            // записываем в исходящий файл заголовок входящего файла
                             sw.Write(firstLine);
-                            //циклом по остальным строкам
+                            // цикл по остальным строкам
                             while (!sr.EndOfStream)
                             {
-                                
                                 currentLine = sr.ReadLine();
-                                currentValue = currentLine?.Split(ColSplitter)[column.Index];
+                                currentValue = ParseLine(currentLine, ColSplitter, column.Index);
+                                // если искомое выражение идентично значению ячейки, то добавляем перенос строки и записываем текущую строку
                                 if (column.Type.IsEqual(Expression, currentValue))
-                                    sw.Write(currentLine);
+                                    sw.Write(sw.NewLine + currentLine);
                             }
                         }
                     }
@@ -117,6 +115,12 @@ namespace CsvParserLib
             {
                 throw new InputFileIsBusyException(InputPath);
             }
+        }
+
+        public static string ParseLine(string currentLine, char colSplitter, int columnIndex)
+        {
+            Regex regex = new Regex($"(\".*\"|[^{colSplitter}])+", RegexOptions.Compiled);
+            return regex.Matches(currentLine)[columnIndex].Value.Trim();
         }
     }
 }

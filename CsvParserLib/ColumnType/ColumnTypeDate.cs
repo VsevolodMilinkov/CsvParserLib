@@ -2,7 +2,7 @@ using System;
 
 namespace CsvParserLib
 {
-    public class ColumnTypeDateTime : IColumnType
+    public class ColumnTypeDate : IColumnType
     {
         public bool CanBeParsed(string expression)
         {
@@ -11,7 +11,7 @@ namespace CsvParserLib
 
         public bool IsEqual(string first, string second)
         {
-            return CanBeParsed(first) && CanBeParsed(second) && DateTime.Equals(DateTime.Parse(first), DateTime.Parse(second));    
+            return CanBeParsed(first) && CanBeParsed(second) && DateTime.Equals(Convert.ToDateTime(first), Convert.ToDateTime(second));    
         }
     }
 }

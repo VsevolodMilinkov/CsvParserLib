@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
 namespace CsvParserLib
 {
@@ -20,23 +18,27 @@ namespace CsvParserLib
 
         public Column(string name, IColumnType type, int index)
         {
-            Name = name ?? throw new MisingColumnNameException();
+            Name = name ?? throw new MissingColumnNameException();
             Type = type ?? throw new MissingColumnTypeException(name);
             Index = index;
         }
 
+        /// <summary>
+        ///  Метод для парсинга входящего заголовка Csv файла с целью найти тип данных и индекс искомого столбца columnName
+        /// </summary>
         public static Column ParseCsvHeader(string csvHeader, string columnName, char colSplitter,
             char headerSplitter)
         {
-            if (csvHeader==null ||string.IsNullOrEmpty(csvHeader.Trim())) throw new CsvHeaderIsEmptyException();
-            if (columnName==null || string.IsNullOrEmpty(columnName.Trim())) throw new CsvHeaderNoColumnNameException();
+            if (csvHeader == null || string.IsNullOrEmpty(csvHeader.Trim())) throw new CsvHeaderIsEmptyException();
+            if (columnName == null || string.IsNullOrEmpty(columnName.Trim()))
+                throw new CsvHeaderNoColumnNameException();
             // в заголовке CSV файла столбцы разделяются colSplitter,
             // а сам столбец - на название и тип данных - разделяется headerSplitter-ом;   
             byte nameIndex = 0; // название столбца д.б. первым, а тип данных - вторым
             byte typeIndex = 1;
             // получаем массив столбцов (строками вида "имя тип")
             var arr = csvHeader.Split(colSplitter);
-            for (byte i = 0; i < arr.Length; i++)
+            for (int i = 0; i < arr.Length; i++)
             {
                 var colArray = arr[i].Split(headerSplitter, StringSplitOptions.RemoveEmptyEntries);
                 if (colArray.Length > 2)
@@ -44,7 +46,7 @@ namespace CsvParserLib
                 if (colArray.Length == 1)
                     throw new NoTypeInColumnException(csvHeader, columnName);
                 if (colArray.Length == 0)
-                    throw new Exception();//todo: сделать вызов кастомного исключения
+                    throw new EmptyColumnException(i); 
 
                 if (colArray[nameIndex].ToLower() == columnName.ToLower())
                 {
@@ -52,6 +54,7 @@ namespace CsvParserLib
                     return new Column(colArray[nameIndex], colType, i);
                 }
             }
+
             throw new NoSuchColumnInCsvHeaderException(columnName, csvHeader);
         }
     }

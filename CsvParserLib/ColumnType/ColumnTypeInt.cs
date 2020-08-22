@@ -11,7 +11,6 @@ namespace CsvParserLib
 
         public bool IsEqual(string first, string second)
         {
-            //todo: проверить, что входящие строки не пустые
             return Convert.ToInt64(first) == Convert.ToInt64(second);
         }
     }

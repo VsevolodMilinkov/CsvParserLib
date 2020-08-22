@@ -13,12 +13,14 @@ namespace CsvParserLib.Tests
 
         [TestCase("123.15")]
         [TestCase("trust me I'm float")]
+        [TestCase("")]
+        [TestCase(" ")]
+        [TestCase(null)]
         public void CanBeParsed_IncorrectString_ExpectFail(string value)
         {
             Assert.False(new ColumnTypeFloat().CanBeParsed(value));
         }
 
-        [Test]
         [TestCase("1", "1")]
         [TestCase("1,1", "1,1")]
         public void IsEqual_CorrectNumbers_ExpectTrue(string value1, string value2)
@@ -33,10 +35,12 @@ namespace CsvParserLib.Tests
             Assert.False(new ColumnTypeFloat().IsEqual(value1, value2));
         }
 
-        [TestCase("a", "1")]
-        [TestCase("a", "1,1")]
-        [TestCase("a", "1.1")]
-        public void IsEqual_StringAndInt_ExpectFalse(string value1, string value2)
+        [TestCase("1,1", "")]
+        [TestCase("1,1", "a")]
+        [TestCase("1,1", "0 1")]
+        [TestCase("1,1", " ")]
+        [TestCase("1,1", null)]
+        public void IsEqual_IncorrectValues_ExpectFalse(string value1, string value2)
         {
             Assert.False(new ColumnTypeFloat().IsEqual(value1, value2));
         }

@@ -1,36 +1,46 @@
-using System;
 using NUnit.Framework;
 
 namespace CsvParserLib.Tests
 {
     public class ColumnTypeStringTests
     {
-        [Test]
-        public void CanBeParsed_CorrectString_ExpectSuccess()
+        [TestCase("123,15")]
+        [TestCase("12315")]
+        [TestCase("Hoba")]
+        [TestCase("+/*-")]
+        [TestCase("\"")]
+        public void CanBeParsed_CorrectString_ExpectSuccess(string value)
         {
-            IColumnType testObject = ColumnTypeFactory.GetColumnType("string");
-            Assert.True(testObject.CanBeParsed("test"));
+            Assert.True(new ColumnTypeString().CanBeParsed(value));
+        }
+
+        [TestCase("")]
+        [TestCase(" ")]
+        [TestCase(null)]
+        public void CanBeParsed_IncorrectString_ExpectFail(string value)
+        {
+            Assert.False(new ColumnTypeString().CanBeParsed(value));
         }
 
         [Test]
-        public void CanBeParsed_EmptyString_ExpectFail()
+        [TestCase("1", "1")]
+        [TestCase("1,1", "1,1")]
+        [TestCase("hoba", "hoba")]
+        [TestCase("\"quote\"", "\"quote\"")]
+        public void IsEqual_CorrectStrings_ExpectTrue(string value1, string value2)
         {
-            IColumnType testObject = ColumnTypeFactory.GetColumnType("string");
-            Assert.False(testObject.CanBeParsed(""));
+            Assert.True(new ColumnTypeString().IsEqual(value1, value2));
         }
 
-        [Test]
-        public void CanBeParsed_NullString_ExpectFail()
+        [TestCase("1,1", "1.1")]
+        [TestCase("hoba", "Hoba")]
+        [TestCase("hoba", "Hoba")]
+        [TestCase("quote", "\"quote\"")]
+        [TestCase("null", null)]
+        [TestCase("null", "")]
+        public void IsEqual_DifferentStrings_ExpectFalse(string value1, string value2)
         {
-            IColumnType testObject = ColumnTypeFactory.GetColumnType("string");
-            Assert.False(testObject.CanBeParsed(null));
-        }
-
-        [Test]
-        public void CanBeParsed_NumberAsString_ExpectSuccess()
-        {
-            IColumnType testObject = ColumnTypeFactory.GetColumnType("string");
-            Assert.True(testObject.CanBeParsed("1"));
+            Assert.False(new ColumnTypeString().IsEqual(value1, value2));
         }
 
         
