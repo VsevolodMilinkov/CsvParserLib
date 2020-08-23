@@ -1,29 +1,30 @@
 ﻿using System;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace CsvParserLib
 {
     public class Parser
     {
-        #region private fields
+        #region Private fields
 
         private string _inputPath;
         private string _outputPath;
         private string _columnName;
-        private object _expression;
+        private string _expression;
 
         #endregion
 
-        #region protected properties
+        #region Protected properties
 
-        protected internal string InputPath
+        internal string InputPath
         {
             get => _inputPath;
             set => _inputPath = File.Exists(value) ? value : throw new InputFileDoesntExistException();
         }
 
-        protected internal string OutputPath
+        internal string OutputPath
         {
             get => _outputPath;
             set => _outputPath = !(string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value))
@@ -31,9 +32,9 @@ namespace CsvParserLib
                 : throw new EmptyOutputFileNameException();
         }
 
-        protected internal Encoding Encoding { get; set; }
+        internal Encoding Encoding { get; set; }
 
-        protected internal string ColumnName
+        internal string ColumnName
         {
             get => _columnName;
             set => _columnName = !(string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value))
@@ -41,20 +42,21 @@ namespace CsvParserLib
                 : throw new EmptyColumnNameException();
         }
 
-        protected internal object Expression
+        internal string Expression
         {
             get => _expression;
-            set => _expression = value;
+            set => _expression = !(string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value))
+                ? value.Trim()
+                : throw new EmptyExpressionException();
         }
 
-        protected internal char ColSplitter { get; set; }
+        internal char ColSplitter { get; set; }
 
-        protected internal char HeaderSplitter { get; set; }
+        internal char HeaderSplitter { get; set; }
 
         #endregion
 
-
-        public Parser(string inputPath, string outputPath, Encoding encoding, string columnName, object expression,
+        public Parser(string inputPath, string outputPath, Encoding encoding, string columnName, string expression,
             char colSplitter = ';', char headerSplitter = ' ')
         {
             InputPath = inputPath;
@@ -68,22 +70,57 @@ namespace CsvParserLib
 
         public bool Parse()
         {
-            throw new NotImplementedException();
+            try
+            {
+                using (var sr = new StreamReader(InputPath))
+                {
+                    // получаем заголовок 
+                    string firstLine = sr.ReadLine();
+                    if (firstLine == null || string.IsNullOrEmpty(firstLine.Trim()))
+                        throw new InputFileIsEmptyException(InputPath);
+                    // получаем инфу об искомом столбце columnName
+                    Column column = Column.ParseCsvHeader(firstLine, ColumnName, ColSplitter, HeaderSplitter);
+                    // проверяем, а соответствует ли значение для поиска из Expression типу данных из столбца в ColumnName
+                    if (!column.Type.CanBeParsed(Expression))
+                        throw new ExpressionTypeMismatchException(ColumnName, Expression);
+                    // создаем/перезаписываем исходящий csv-файл
+                    try
+                    {
+                        string currentValue;
+                        string currentLine;
+                        using (var sw = new StreamWriter(OutputPath, false, Encoding))
+                        {
+                            // записываем в исходящий файл заголовок входящего файла
+                            sw.Write(firstLine);
+                            // цикл по остальным строкам
+                            while (!sr.EndOfStream)
+                            {
+                                currentLine = sr.ReadLine();
+                                currentValue = ParseLine(currentLine, ColSplitter, column.Index);
+                                // если искомое выражение идентично значению ячейки, то добавляем перенос строки и записываем текущую строку
+                                if (column.Type.IsEqual(Expression, currentValue))
+                                    sw.Write(sw.NewLine + currentLine);
+                            }
+                        }
+                    }
+                    catch (IOException)
+                    {
+                        throw new OutputFileIsBusyException(OutputPath);
+                    }
+                }
+
+                return true;
+            }
+            catch (IOException)
+            {
+                throw new InputFileIsBusyException(InputPath);
+            }
         }
-    }
 
-    public class EmptyColumnNameException : ArgumentException
-    {
-        public override string Message { get; } = "Получено пустое имя столбца для парсинга!";
-    }
-
-    public class EmptyOutputFileNameException : ArgumentException
-    {
-        public override string Message { get; } = "Введите имя исходящего файла!";
-    }
-
-    public class InputFileDoesntExistException : ArgumentException
-    {
-        public override string Message { get; } = "Введите имя входящего файла!";
+        public static string ParseLine(string currentLine, char colSplitter, int columnIndex)
+        {
+            Regex regex = new Regex($"(\".*\"|[^{colSplitter}])+", RegexOptions.Compiled);
+            return regex.Matches(currentLine)[columnIndex].Value.Trim();
+        }
     }
 }
