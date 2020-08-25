@@ -27,9 +27,9 @@ namespace CsvParserLib
         internal string OutputPath
         {
             get => _outputPath;
-            set => _outputPath = !(string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value))
-                ? value.Trim()
-                : throw new EmptyOutputFileNameException();
+            set => _outputPath = string.IsNullOrWhiteSpace(value)
+                ? throw new EmptyOutputFileNameException()
+                : value.Trim();
         }
 
         internal Encoding Encoding { get; set; }
@@ -37,17 +37,17 @@ namespace CsvParserLib
         internal string ColumnName
         {
             get => _columnName;
-            set => _columnName = !(string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value))
-                ? value.Trim()
-                : throw new EmptyColumnNameException();
+            set => _columnName = string.IsNullOrWhiteSpace(value)
+                ? throw new EmptyColumnNameException()
+                : value.Trim();
         }
 
         internal string Expression
         {
             get => _expression;
-            set => _expression = !(string.IsNullOrEmpty(value) || string.IsNullOrWhiteSpace(value))
-                ? value.Trim()
-                : throw new EmptyExpressionException();
+            set => _expression = string.IsNullOrWhiteSpace(value)
+                ? throw new EmptyExpressionException()
+                : value.Trim();
         }
 
         internal char ColSplitter { get; set; }
@@ -76,7 +76,7 @@ namespace CsvParserLib
                 {
                     // получаем заголовок 
                     string firstLine = sr.ReadLine();
-                    if (firstLine == null || string.IsNullOrEmpty(firstLine.Trim()))
+                    if (string.IsNullOrWhiteSpace(firstLine))
                         throw new InputFileIsEmptyException(InputPath);
                     // получаем инфу об искомом столбце columnName
                     Column column = Column.ParseCsvHeader(firstLine, ColumnName, ColSplitter, HeaderSplitter);
@@ -88,19 +88,17 @@ namespace CsvParserLib
                     {
                         string currentValue;
                         string currentLine;
-                        using (var sw = new StreamWriter(OutputPath, false, Encoding))
+                        using var sw = new StreamWriter(OutputPath, false, Encoding);
+                        // записываем в исходящий файл заголовок входящего файла
+                        sw.Write(firstLine);
+                        // цикл по остальным строкам
+                        while (!sr.EndOfStream)
                         {
-                            // записываем в исходящий файл заголовок входящего файла
-                            sw.Write(firstLine);
-                            // цикл по остальным строкам
-                            while (!sr.EndOfStream)
-                            {
-                                currentLine = sr.ReadLine();
-                                currentValue = ParseLine(currentLine, ColSplitter, column.Index);
-                                // если искомое выражение идентично значению ячейки, то добавляем перенос строки и записываем текущую строку
-                                if (column.Type.IsEqual(Expression, currentValue))
-                                    sw.Write(sw.NewLine + currentLine);
-                            }
+                            currentLine = sr.ReadLine();
+                            currentValue = ParseLine(currentLine, ColSplitter, column.Index);
+                            // если искомое выражение идентично значению ячейки, то добавляем перенос строки и записываем текущую строку
+                            if (column.Type.IsEqual(Expression, currentValue))
+                                sw.Write(sw.NewLine + currentLine);
                         }
                     }
                     catch (IOException)
@@ -119,6 +117,9 @@ namespace CsvParserLib
 
         public static string ParseLine(string currentLine, char colSplitter, int columnIndex)
         {
+            // регулярное выражение разделяет строку csv-файла на массив строк, разделяя строку
+            // на элементы массива либо по знаку colSplitter, либо по двойным кавычкам,
+            // обозначающих начало и конец ячейки в строке
             Regex regex = new Regex($"(\".*\"|[^{colSplitter}])+", RegexOptions.Compiled);
             return regex.Matches(currentLine)[columnIndex].Value.Trim();
         }

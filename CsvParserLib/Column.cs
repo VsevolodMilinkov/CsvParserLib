@@ -29,9 +29,8 @@ namespace CsvParserLib
         public static Column ParseCsvHeader(string csvHeader, string columnName, char colSplitter,
             char headerSplitter)
         {
-            if (csvHeader == null || string.IsNullOrEmpty(csvHeader.Trim())) throw new CsvHeaderIsEmptyException();
-            if (columnName == null || string.IsNullOrEmpty(columnName.Trim()))
-                throw new CsvHeaderNoColumnNameException();
+            if (string.IsNullOrWhiteSpace(csvHeader)) throw new CsvHeaderIsEmptyException();
+            if (string.IsNullOrWhiteSpace(columnName)) throw new CsvHeaderNoColumnNameException();
             // в заголовке CSV файла столбцы разделяются colSplitter,
             // а сам столбец - на название и тип данных - разделяется headerSplitter-ом;   
             byte nameIndex = 0; // название столбца д.б. первым, а тип данных - вторым

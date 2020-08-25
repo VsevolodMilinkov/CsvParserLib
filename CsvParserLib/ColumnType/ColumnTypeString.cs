@@ -5,7 +5,7 @@ namespace CsvParserLib
         public bool CanBeParsed(string expression)
         {
             //я не буду конвертить строку в строку, неет - только проверю, что строка не пустая;
-            return !string.IsNullOrEmpty(expression?.Trim());
+            return !string.IsNullOrWhiteSpace(expression);
         }
 
         public bool IsEqual(string first, string second)
