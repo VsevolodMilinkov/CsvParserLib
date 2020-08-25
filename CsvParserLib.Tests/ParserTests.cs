@@ -74,26 +74,13 @@ namespace CsvParserLib.Tests
         public void Parse_BusyInputFile_ExpectInputFileIsBusyException()
         {
             var name = "TestFile.PleaseDeleteMe";
-
-            try
+            using var file = new TestFile();
+            using (var stream = File.Open(file.name, FileMode.Open, FileAccess.Read))
             {
-                if (File.Exists(name))
-                    File.Delete(name);
-                File.Create(name); //создаем пустой файл, но не закрываем соединение через .Close()
-                Assert.Catch<InputFileIsBusyException>(() =>
-                        new Parser(name, "file2", Encoding.Default, "Column1", "1").Parse(),
+                Assert.Catch<InputFileIsBusyException>(
+                    () => new Parser(name, "file2", Encoding.Default, "Column1", "1").Parse(),
                     "Не удалось проверить вызов исключения InputFileIsBusyException при попытке парсинга входного файла, занятого другим процессом"
                 );
-            }
-            catch (Exception e)
-            {
-                Assert.Fail(
-                    $"Неопределенная ошибка при попытке парсинга входного файла, занятого другим процессом: {e.Message}: {e.StackTrace}");
-            }
-            finally
-            {
-                if (File.Exists(name))
-                    File.Delete(name);
             }
         }
 
